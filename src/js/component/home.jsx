@@ -14,65 +14,105 @@ import React, { useEffect, useState } from "react"
     
     const gettasks = () => {
 
-        fetch('https://playground.4geeks.com/todo/users/antuan')
-            .then(response => {
-                return response.json()
+        fetch("https://playground.4geeks.com/todo/users/antuan")
+            .then((response) => {
+                if (response.ok) {
+                    return response.json();
+                } else if (response.status === 404) {
+                    // Si no existe el usuario, lo creamos
+                    return createUser();
+                } else {
+                    throw new Error("Error al obtener las tareas");
+                }
             })
-            .then(data => {
-                setListatareas(data.todos)
+            .then((data) => {
+                if (data.todos) {
+                    setListatareas(data.todos);
+                }
             })
-            .catch(error => {
-                console.error(error);
-            });
+            .catch((error) => console.error(error));
     }
 
-    const deleteTask =(id) => {
-        fetch(`https://playground.4geeks.com/todo/todos/${id}`, { method: 'DELETE' })
-            
-    }
 
-    const createpost = (task) => {
-
-
-        fetch("https://playground.4geeks.com/todo/todos/antuan", {
-            method: 'POST',
+    const createUser = () => {
+        return fetch("https://playground.4geeks.com/todo/users/antuan", {
+            method: "POST",
             headers: {
-                'Content-Type': 'application/json',
+                "Content-Type": "application/json",
             },
-            body: JSON.stringify({
-                label: task,
-                is_done: false
-            })
+            body: JSON.stringify([]), // Un usuario nuevo tiene una lista de tareas vacía
         })
-            .then(response => {
-                return response.json()
+            .then((response) => {
+                if (response.ok) {
+                    return response.json();
+                }
+                throw new Error("Error al crear el usuario");
             })
-            .then(data => {
-                console.log(data)})
-    }
+            .then(() => {
+                console.log("Usuario creado");
+                return { todos: [] }; // Devolvemos una lista vacía para inicializar
+            });
+    };  
+
+
+    
+    const deleteTask = (id) => {
+        // Filtrar la tarea que se debe eliminar
+        const nuevaLista = listaTareas.filter((tarea,) => tarea.id !== id);
+    
+        // Actualizar el estado local
+        setListatareas(nuevaLista);
+    
+        
+        fetch("https://playground.4geeks.com/todo/users/antuan", {
+            method: "PUT", // Actualizamos toda la lista en el servidor
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(nuevaLista),
+        })
+        .then((response) => {
+            if (response.ok) {
+                console.log("Tarea eliminada correctamente en el servidor");
+            }
+        })
+        .catch((error) => {
+            console.error("Error al eliminar la tarea en el servidor:", error);
+        });
+    };
+
+    const updateTasks = (tareas) => {
+        fetch("https://playground.4geeks.com/todo/users/antuan", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(tareas),
+        })
+            .then((response) => {
+                if (!response.ok) throw new Error("Error al actualizar las tareas");
+                return response.json();
+            })
+            .then(() => console.log("Tareas actualizadas"))
+            .catch((error) => console.error(error));
+    };
 
     
 
-    function agregartarea(e) {
+    
 
-        // Aqui estamos utilizando una condicion para cuando una persona toca la letra enter se agrege la tarea 
-        if (e.key == "Enter") {
+    const agregarTarea = (e) => {
+        if (e.key === "Enter" && tarea.trim() !== "") {
+            // estoy agregando un nuevo identificador usando Date.now()( esto me genera un numero)  para cada tarea ya que todas al tener el mismo id. se borran debido a la condicion que les puse. 
+            const nuevaTarea = { id: Date.now(), label: tarea, is_done: false };
+            const nuevaLista = [...listaTareas, nuevaTarea];
 
-            // Al array listaTareas le agregamos la informacion que recopila el input(Tarea)
-
-            // Creamos un nuevo array en el cual se lo incorporamos a la base de datos que recopila el input(Tarea)
-            let arraynuevo = listaTareas.concat(tarea)
-
-            // // Ahora aqui le pasamos el valor de arraynuevo a la funcion setListatareas
-
-            setListatareas(arraynuevo)
-
-            // quiero agregar lo que se esta escribiendo(Tarea) a una lista (Listatareas)
-
-            setTarea('')
-
+            setListatareas(nuevaLista);
+            setTarea("");
+            updateTasks(nuevaLista);
         }
-    } 
+    };
+
+
+
     return (
         <div className=" p-3 mb-2 bg-light">
             <div className="">
@@ -81,7 +121,7 @@ import React, { useEffect, useState } from "react"
 
 
                 <input type=" input text" onChange={(e) => setTarea(e.target.value)} value={tarea}
-                    onKeyDown={agregartarea}
+                    onKeyDown={agregarTarea}
                 />
 
                 <ul className="lista">
