@@ -3,15 +3,15 @@ import React, { useEffect, useState } from "react"
 
 
 
-  const Home = () => {
+const Home = () => {
 
     const [tarea, setTarea] = useState("")
     const [listaTareas, setListatareas] = useState([])
 
-    useEffect( () => {
+    useEffect(() => {
         gettasks()
-    },[] )
-    
+    }, [])
+
     const gettasks = () => {
 
         fetch("https://playground.4geeks.com/todo/users/antuan")
@@ -52,64 +52,68 @@ import React, { useEffect, useState } from "react"
                 console.log("Usuario creado");
                 return { todos: [] }; // Devolvemos una lista vacía para inicializar
             });
-    };  
-
-
-    
-    const deleteTask = (id) => {
-        // Filtrar la tarea que se debe eliminar
-        const nuevaLista = listaTareas.filter((tarea,) => tarea.id !== id);
-    
-        // Actualizar el estado local
-        setListatareas(nuevaLista);
-    
-        
-        fetch("https://playground.4geeks.com/todo/users/antuan", {
-            method: "PUT", // Actualizamos toda la lista en el servidor
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(nuevaLista),
-        })
-        .then((response) => {
-            if (response.ok) {
-                console.log("Tarea eliminada correctamente en el servidor");
-            }
-        })
-        .catch((error) => {
-            console.error("Error al eliminar la tarea en el servidor:", error);
-        });
     };
 
-    const updateTasks = (tareas) => {
-        fetch("https://playground.4geeks.com/todo/users/antuan", {
-            method: "PUT",
+
+
+    const deleteTask = (id) => {
+
+        fetch("https://playground.4geeks.com/todo/todos/" + id, {
+            method: "DELETE", // Actualizamos toda la lista en el servidor
+            headers: { "Content-Type": "application/json" },
+
+        })
+            .then((response) => {
+                if (response.ok) {
+                    console.log("Tarea eliminada correctamente en el servidor");
+                    // Filtrar la tarea que se debe eliminar
+                    const nuevaLista = listaTareas.filter((tarea,) => tarea.id !== id);
+
+                    // Actualizar el estado local
+                    setListatareas(nuevaLista);
+                }
+            })
+            .catch((error) => {
+                console.error("Error al eliminar la tarea en el servidor:", error);
+            });
+    };
+
+    const createtask = () => {
+        const nuevaTarea = {label: tarea, is_done: false };
+
+        fetch("https://playground.4geeks.com/todo/todos/antuan", {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify(tareas),
+            body: JSON.stringify(nuevaTarea),
         })
             .then((response) => {
                 if (!response.ok) throw new Error("Error al actualizar las tareas");
                 return response.json();
             })
-            .then(() => console.log("Tareas actualizadas"))
+            .then((data) => {
+                const nuevaLista = [...listaTareas, data];
+                setListatareas(nuevaLista);
+
+            })
             .catch((error) => console.error(error));
     };
 
-    
 
-    
+
+
 
     const agregarTarea = (e) => {
         if (e.key === "Enter" && tarea.trim() !== "") {
             // estoy agregando un nuevo identificador usando Date.now()( esto me genera un numero)  para cada tarea ya que todas al tener el mismo id. se borran debido a la condicion que les puse. 
-            const nuevaTarea = { id: Date.now(), label: tarea, is_done: false };
-            const nuevaLista = [...listaTareas, nuevaTarea];
-
-            setListatareas(nuevaLista);
+            createtask()
             setTarea("");
-            updateTasks(nuevaLista);
         }
     };
+
+
+
 
 
 
@@ -125,7 +129,7 @@ import React, { useEffect, useState } from "react"
                 />
 
                 <ul className="lista">
-                    {listaTareas.map((item, index) => <li key={index}>   {item.label} <span onClick={() => deleteTask(item.id) }> x </span> </li>)}
+                    {listaTareas.map((item, index) => <li key={index}>   {item.label} <span onClick={() => deleteTask(item.id)}> x </span> </li>)}
                 </ul>
 
                 <div> <p> {listaTareas.length} </p> </div>
@@ -133,6 +137,6 @@ import React, { useEffect, useState } from "react"
         </div>
 
     )
-} 
+}
 
 export default Home
